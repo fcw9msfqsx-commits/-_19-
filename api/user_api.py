@@ -9,8 +9,8 @@ class UserApi(BaseApi):
             "password": password,
         }
 
-        return self.session.post(
-            f"{self.base_url}/api/register",
+        return self.post(
+            "/api/register",
             json=payload,
         )
 
@@ -20,7 +20,11 @@ class UserApi(BaseApi):
             "password": password,
         }
 
-        return self.session.post(
-            f"{self.base_url}/api/login",
+        return self.post(
+            "/api/login",
             json=payload,
         )
+
+    def get_token(self, email, password):
+        response = self.login(email, password)
+        return response.json()["token"]

@@ -2,41 +2,38 @@ from api.base_api import BaseApi
 
 
 class NotesApi(BaseApi):
-    def get_notes(self, token=None):
-        headers = self._get_headers(token)
+    def __init__(self, token=None):
+        super().__init__()
+        self.token = token
 
-        return self.session.get(
-            f"{self.base_url}/api/notes",
-            headers=headers,
+    def _get_headers(self):
+        if self.token is None:
+            return {}
+
+        return {
+            "Authorization": f"Bearer {self.token}",
+        }
+
+    def get_notes(self):
+        return self.get(
+            "/api/notes",
+            headers=self._get_headers(),
         )
 
-    def create_note(self, title, content, token=None):
-        headers = self._get_headers(token)
-
+    def create_note(self, title, content):
         payload = {
             "title": title,
             "content": content,
         }
 
-        return self.session.post(
-            f"{self.base_url}/api/notes",
-            headers=headers,
+        return self.post(
+            "/api/notes",
             json=payload,
+            headers=self._get_headers(),
         )
 
-    def delete_note(self, note_id, token=None):
-        headers = self._get_headers(token)
-
-        return self.session.delete(
-            f"{self.base_url}/api/notes/{note_id}",
-            headers=headers,
+    def delete_note(self, note_id):
+        return self.delete(
+            f"/api/notes/{note_id}",
+            headers=self._get_headers(),
         )
-
-    @staticmethod
-    def _get_headers(token):
-        if token is None:
-            return {}
-
-        return {
-            "Authorization": f"Bearer {token}",
-        }
