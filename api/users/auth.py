@@ -20,7 +20,7 @@ class Auth(BaseApi):
             headers=self.headers
         )
 
-    def authenticate(self, email, password):
+    def login(self, email, password):
         user = {"email": email, "password": password}
         return self.post(
             self.LOGIN_ENDPOINT,
@@ -29,5 +29,4 @@ class Auth(BaseApi):
         )
 
     def get_token(self, email, password):
-        response = self.authenticate(email, password)
-        return response.json()["token"]
+        return self.login(email, password).json()["token"]

@@ -1,10 +1,15 @@
+import os
 from uuid import uuid4
 
 import pytest
+from dotenv import load_dotenv
 
 from api.notes.notes_api import NotesApi
 from api.users.auth import Auth
-from helpers.helper import make_user
+from helpers.helper_remember import HelperRemember
+
+
+load_dotenv()
 
 
 @pytest.fixture(scope="session")
@@ -13,29 +18,53 @@ def auth():
 
 
 @pytest.fixture(scope="session")
-def user_data():
-    return make_user()
+def registered_user():
+    return {
+        "email": os.getenv("TEST_EMAIL"),
+        "password": os.getenv("TEST_PASSWORD")
+    }
 
 
 @pytest.fixture(scope="session")
-def registered_user(auth, user_data):
-    response = auth.register(**user_data)
-    assert response.status_code == 201, response.text
-    return user_data
+def another_user():
+    return {
+        "email": os.getenv("ANOTHER_TEST_EMAIL"),
+        "password": os.getenv("ANOTHER_TEST_PASSWORD")
+    }
+
+
+@pytest.fixture
+def registration_user():
+    value = uuid4().hex[:10]
+    return {
+        "email": f"test_{value}@testov.ru",
+        "password": "QaAutomation123!",
+        "username": f"qa_{value}"
+    }
 
 
 @pytest.fixture(scope="session")
 def token(auth, registered_user):
-    response = auth.authenticate(
+    return auth.get_token(
         registered_user["email"], registered_user["password"]
     )
-    assert response.status_code == 200, response.text
-    return response.json()["token"]
+
+
+@pytest.fixture(scope="session")
+def another_token(auth, another_user):
+    return auth.get_token(
+        another_user["email"], another_user["password"]
+    )
 
 
 @pytest.fixture
 def notes_api_with_token(token):
     return NotesApi(token=token)
+
+
+@pytest.fixture
+def helper_remember():
+    return HelperRemember()
 
 
 @pytest.fixture
@@ -49,25 +78,36 @@ def notes_api_with_invalid_token(token):
 
 
 @pytest.fixture
-def note_for_test(notes_api_with_token):
-    title = f"Тестовая заметка {uuid4().hex[:8]}"
-    content = "Содержимое тестовой заметки"
-    response = notes_api_with_token.post_note(title=title, content=content)
-    assert response.status_code == 201, response.text
-    note = notes_api_with_token.get_note_for_title(title)
-    assert note is not None
-    yield note
-    cleanup_response = notes_api_with_token.delete_note(note["id"])
-    assert cleanup_response.status_code in (200, 404), cleanup_response.text
+def note_data():
+    return {
+        "title": f"Тестовая заметка {uuid4().hex[:8]}",
+        "content": "Содержимое тестовой заметки"
+    }
 
 
 @pytest.fixture
-def another_notes_api(auth):
-    another_user = make_user()
-    register_response = auth.register(**another_user)
-    assert register_response.status_code == 201, register_response.text
-    token_response = auth.authenticate(
-        another_user["email"], another_user["password"]
-    )
-    assert token_response.status_code == 200, token_response.text
-    return NotesApi(token=token_response.json()["token"])
+def create_note(notes_api_with_token, note_data, helper_remember):
+    notes_api_with_token.post_note(**note_data)
+    helper_remember.remember_note(note_data["title"])
+
+
+@pytest.fixture
+def setup(notes_api_with_token, create_note, helper_remember):
+    notes_id = notes_api_with_token.get_note_for_title(
+        helper_remember.title
+    )["id"]
+    return notes_id
+
+
+@pytest.fixture
+def teardown(notes_api_with_token, helper_remember):
+    yield
+    if helper_remember.title:
+        note = notes_api_with_token.get_note_for_title(helper_remember.title)
+        if note:
+            notes_api_with_token.delete_note(note["id"])
+
+
+@pytest.fixture
+def another_notes_api(another_token):
+    return NotesApi(token=another_token)

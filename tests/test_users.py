@@ -1,9 +1,6 @@
-from helpers.helper import make_user
-
-
 class TestUsers:
-    def test_register(self, auth):
-        user = make_user()
+    def test_register(self, auth, registration_user):
+        user = registration_user
         response = auth.register(**user)
 
         assert response.status_code == 201, (
@@ -12,7 +9,7 @@ class TestUsers:
         assert response.json()["message"] == "Успешная регистрация!"
 
     def test_login(self, auth, registered_user):
-        response = auth.authenticate(
+        response = auth.login(
             registered_user["email"], registered_user["password"]
         )
 
@@ -24,7 +21,7 @@ class TestUsers:
         assert token, "Сервер вернул пустой токен"
 
     def test_login_with_wrong_password(self, auth, registered_user):
-        response = auth.authenticate(
+        response = auth.login(
             registered_user["email"], "WrongPassword123!"
         )
 
@@ -34,7 +31,11 @@ class TestUsers:
         assert "message" in response.json(), "В ответе нет сообщения об ошибке"
 
     def test_register_duplicate_email(self, auth, registered_user):
-        response = auth.register(**registered_user)
+        response = auth.register(
+            email=registered_user["email"],
+            password=registered_user["password"],
+            username="another_username"
+        )
 
         assert response.status_code == 409, (
             f"Ожидалось сообщение о занятом email: {response.text}"
@@ -49,5 +50,6 @@ class TestUsers:
         )
 
         assert response.status_code in (400, 500), (
-            f"Получен неожиданный статус: {response.status_code}"
+            f"Ожидался статус 400 или 500, получен {response.status_code}: "
+            f"{response.text}"
         )

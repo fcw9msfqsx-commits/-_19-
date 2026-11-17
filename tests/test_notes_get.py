@@ -1,5 +1,5 @@
 class TestNotesGet:
-    def test_get_notes(self, notes_api_with_token, note_for_test):
+    def test_get_notes(self, notes_api_with_token, setup, teardown):
         response = notes_api_with_token.get_notes()
 
         assert response.status_code == 200, (
@@ -7,7 +7,7 @@ class TestNotesGet:
         )
         notes = response.json()
         assert isinstance(notes, list), "В ответе ожидался список заметок"
-        assert any(note["id"] == note_for_test["id"] for note in notes), (
+        assert any(note["id"] == setup for note in notes), (
             "Созданная заметка не найдена в списке"
         )
         for note in notes:
