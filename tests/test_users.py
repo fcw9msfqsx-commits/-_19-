@@ -8,9 +8,9 @@ class TestUsers:
         )
         assert response.json()["message"] == "Успешная регистрация!"
 
-    def test_login(self, auth, registered_user):
+    def test_login(self, auth, primary_user_credentials):
         response = auth.login(
-            registered_user["email"], registered_user["password"]
+            primary_user_credentials["email"], primary_user_credentials["password"]
         )
 
         assert response.status_code == 200, (
@@ -20,9 +20,9 @@ class TestUsers:
         assert isinstance(token, str), "В ответе нет строкового токена"
         assert token, "Сервер вернул пустой токен"
 
-    def test_login_with_wrong_password(self, auth, registered_user):
+    def test_login_with_wrong_password(self, auth, primary_user_credentials):
         response = auth.login(
-            registered_user["email"], "WrongPassword123!"
+            primary_user_credentials["email"], "WrongPassword123!"
         )
 
         assert response.status_code == 401, (
@@ -30,10 +30,10 @@ class TestUsers:
         )
         assert "message" in response.json(), "В ответе нет сообщения об ошибке"
 
-    def test_register_duplicate_email(self, auth, registered_user):
+    def test_register_duplicate_email(self, auth, primary_user_credentials):
         response = auth.register(
-            email=registered_user["email"],
-            password=registered_user["password"],
+            email=primary_user_credentials["email"],
+            password=primary_user_credentials["password"],
             username="another_username"
         )
 
@@ -49,7 +49,7 @@ class TestUsers:
             headers=auth.headers
         )
 
-        assert response.status_code in (400, 500), (
-            f"Ожидался статус 400 или 500, получен {response.status_code}: "
+        assert response.status_code == 500, (
+            f"Ожидался статус 500, получен {response.status_code}: "
             f"{response.text}"
         )

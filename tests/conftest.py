@@ -18,7 +18,7 @@ def auth():
 
 
 @pytest.fixture(scope="session")
-def registered_user():
+def primary_user_credentials():
     return {
         "email": os.getenv("TEST_EMAIL"),
         "password": os.getenv("TEST_PASSWORD")
@@ -26,7 +26,7 @@ def registered_user():
 
 
 @pytest.fixture(scope="session")
-def another_user():
+def secondary_user_credentials():
     return {
         "email": os.getenv("ANOTHER_TEST_EMAIL"),
         "password": os.getenv("ANOTHER_TEST_PASSWORD")
@@ -44,16 +44,26 @@ def registration_user():
 
 
 @pytest.fixture(scope="session")
-def token(auth, registered_user):
+def token(auth, primary_user_credentials):
     return auth.get_token(
-        registered_user["email"], registered_user["password"]
+        primary_user_credentials["email"],
+        primary_user_credentials["password"]
     )
 
 
 @pytest.fixture(scope="session")
-def another_token(auth, another_user):
+def another_token(auth, secondary_user_credentials):
     return auth.get_token(
-        another_user["email"], another_user["password"]
+        secondary_user_credentials["email"],
+        secondary_user_credentials["password"]
+    )
+
+
+@pytest.fixture(scope="session")
+def another_token(auth, secondary_user_credentials):
+    return auth.get_token(
+        secondary_user_credentials["email"],
+        secondary_user_credentials["password"]
     )
 
 
